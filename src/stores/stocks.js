@@ -7,7 +7,7 @@ export const useStocksStore = defineStore('stocks', () => {
   const loading = ref(false)
   const error = ref(null)
   const page = ref(1)
-  const limit = ref(25)
+  const limit = ref(500)
   const totalPages = ref(1)
   
   // Функция для форматирования даты в YYYY-MM-DD
@@ -19,8 +19,12 @@ export const useStocksStore = defineStore('stocks', () => {
   const filters = ref({
     dateFrom: formatDate(new Date()),
     dateTo: formatDate(new Date()),
+    limit: limit.value,
     region: ''
   })
+
+  // Опции для лимита
+  const limitOptions = ref([25, 50, 100, 250, 500])
 
   async function fetchStocks() {
     try {
@@ -33,7 +37,7 @@ export const useStocksStore = defineStore('stocks', () => {
         params: {
           key: sicretKey,
           page: page.value,
-          limit: limit.value,
+          limit: filters.value.limit,
           dateFrom: filters.value.dateFrom, 
           dateTo: filters.value.dateTo   
         }
@@ -72,6 +76,7 @@ export const useStocksStore = defineStore('stocks', () => {
       ...filters.value,
       ...newFilters
     }
+    limit.value = filters.value.limit
     fetchStocks()
   }
 
@@ -81,6 +86,7 @@ export const useStocksStore = defineStore('stocks', () => {
     applyFilters({
       dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
       dateTo: formatDate(new Date()),
+      lmit: 500,
       region: ''
     })
   }
@@ -92,7 +98,8 @@ export const useStocksStore = defineStore('stocks', () => {
     page,
     totalPages,
     filters,
-    fetchStocks, // <- не забудьте добавить эту строку!
+    limitOptions,
+    fetchStocks,
     nextPage,
     prevPage,
     applyFilters,

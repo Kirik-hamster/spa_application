@@ -7,7 +7,7 @@ export const useIncomesStore = defineStore('incomes', () => {
   const loading = ref(false)
   const error = ref(null)
   const page = ref(1)
-  const limit = ref(25)
+  const limit = ref(500)
   const totalPages = ref(1)
   
   // Функция для форматирования даты в YYYY-MM-DD
@@ -19,9 +19,12 @@ export const useIncomesStore = defineStore('incomes', () => {
   const filters = ref({
     dateFrom: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
     dateTo: formatDate(new Date()),
+    limit: limit.value,
     region: ''
   })
 
+  // Опции для лимита
+  const limitOptions = ref([25, 50, 100, 250, 500])
 
   async function fetchIncomes() {
     try {
@@ -39,7 +42,7 @@ export const useIncomesStore = defineStore('incomes', () => {
         params: {
           key: sicretKey,
           page: page.value,
-          limit: limit.value,
+          limit: filters.value.limit,
           dateFrom: filters.value.dateFrom, 
           dateTo: filters.value.dateTo   
         }
@@ -78,6 +81,7 @@ export const useIncomesStore = defineStore('incomes', () => {
       ...filters.value,
       ...newFilters
     }
+    limit.value = filters.value.limit
     fetchIncomes()
   }
 
@@ -87,6 +91,7 @@ export const useIncomesStore = defineStore('incomes', () => {
     applyFilters({
       dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
       dateTo: formatDate(new Date()),
+      lmit: 500,
       region: ''
     })
   }
@@ -99,7 +104,8 @@ export const useIncomesStore = defineStore('incomes', () => {
     page,
     totalPages,
     filters,
-    fetchIncomes, // <- не забудьте добавить эту строку!
+    limitOptions,
+    fetchIncomes, 
     nextPage,
     prevPage,
     applyFilters,

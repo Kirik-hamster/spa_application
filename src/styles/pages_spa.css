@@ -66,7 +66,7 @@
   font-size: 14px;
 }
 
-.filter-input {
+.filter-input, .filter-сount-per-page {
   padding: 10px 12px;
   border: 1px solid #dcdfe6;
   border-radius: 6px;
@@ -74,12 +74,15 @@
   transition: border-color 0.3s;
 }
 
-.filter-input:focus {
+.filter-input:focus, .filter-сount-per-page:focus {
   outline: none;
   border-color: #42b983;
   box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
 }
 
+select.filter-сount-per-page {
+  background-color: white; 
+}
 .filter-actions {
   display: flex;
   gap: 12px;

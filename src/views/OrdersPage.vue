@@ -4,18 +4,20 @@ import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import OrdersChart from '@/components/OrdersChart.vue' // Добавляем импорт
 
-// 1. Получаем экземпляр хранилища
+// Получаем экземпляр хранилища
 const ordersStore = useOrdersStore()
 
-// 2. Извлекаем реактивные переменные
+// Извлекаем реактивные переменные
 const { orders, loading, error, page, totalPages, 
-  filters } = storeToRefs(ordersStore)
+  filters, limitOptions
+} = storeToRefs(ordersStore)
 
 // Локальные фильтры для формы
 const localFilters = ref({
   dateFrom: filters.value.dateFrom,
   dateTo: filters.value.dateTo,
-  region: filters.value.region
+  region: filters.value.region,
+  limit: filters.value.limit
 })
 
 
@@ -24,7 +26,7 @@ const applyFilters = () => {
   ordersStore.applyFilters(localFilters.value)
 }
 
-// 3. Загружаем данные при создании компонента
+// Загружаем данные при создании компонента
 onMounted(() => {
   ordersStore.fetchOrders()
 })
@@ -54,6 +56,15 @@ onMounted(() => {
           <div class="filter-group">
             <label>Регион</label>
             <input type="text" v-model="localFilters.region" placeholder="Введите область" class="filter-input">
+          </div>
+                    
+          <div class="filter-group">
+            <label>Записей на одну страницу</label>
+            <select v-model="localFilters.limit" class="filter-сount-per-page">
+              <option v-for="option in limitOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
           </div>
           
           <div class="filter-actions">
