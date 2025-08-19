@@ -49,7 +49,8 @@ export const useOrdersStore = defineStore('orders', () => {
       loading.value = false
     }
   }
-    // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
+
+  // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
   function nextPage() {
     if (page.value < totalPages.value) {
       page.value++

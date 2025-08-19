@@ -7,20 +7,19 @@ import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, Li
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
-  orders: {
+  incomes: {
     type: Array,
     required: true
   }
 })
 
-
 const chartData = {
-  labels: props.orders.map(order => order.barcode),
+  labels: props.incomes.map(income => income.barcode),
   datasets: [
     {
-      label: 'Сумма заказов товара',
+      label: 'Колличество проданного товара',
       backgroundColor: '#f87979',
-      data: props.orders.map(order => parseFloat(order.total_price))
+      data: props.incomes.map(income => parseInt(income.quantity))
     }
   ]
 }
@@ -32,13 +31,13 @@ const chartOptions = ref({
     x: {
       title: {
         display: true,
-        text: 'Штрихкод'
+        text: 'штрихкод товара'
       }
     },
     y: {
       title: {
         display: true,
-        text: 'Сумма (руб)'
+        text: 'колличество продано'
       }
     }
   }

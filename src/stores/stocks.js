@@ -15,24 +15,27 @@ export const useStocksStore = defineStore('stocks', () => {
     return date.toISOString().split('T')[0]
   }
 
+  // Изначальные фильтры (последние 7 дней)
+  const filters = ref({
+    dateFrom: formatDate(new Date()),
+    dateTo: formatDate(new Date()),
+    region: ''
+  })
+
   async function fetchStocks() {
     try {
       loading.value = true
       error.value = null
-      
-      // Рассчитываем даты (последние 7 дней)
-        const today = new Date() // Фиксируем текущую дату
-        const dateFrom = formatDate(new Date(today)) // Сегодня
-        const dateTo = formatDate(new Date(today.setDate(today.getDate() - 7))) // 7 дней назад
-      console.log("stocks: ", dateFrom, dateTo, today)
+
+      const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
       const response = await axios.get('http://109.73.206.144:6969/api/stocks', {
         params: {
-          key: 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie',
+          key: sicretKey,
           page: page.value,
           limit: limit.value,
-          dateFrom, // Обязательный параметр
-          dateTo    // Обязательный параметр
+          dateFrom: filters.value.dateFrom, 
+          dateTo: filters.value.dateTo   
         }
       })
       console.log("stocks: ", response.data.data)
@@ -46,7 +49,8 @@ export const useStocksStore = defineStore('stocks', () => {
       loading.value = false
     }
   }
-    // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
+
+  // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
   function nextPage() {
     if (page.value < totalPages.value) {
       page.value++
@@ -61,14 +65,37 @@ export const useStocksStore = defineStore('stocks', () => {
     }
   }
 
-    return {
+  // Функция применения фильтров
+  function applyFilters(newFilters = {}) {
+    page.value = 1 // Сбрасываем на первую страницу при изменении фильтров
+    filters.value = {
+      ...filters.value,
+      ...newFilters
+    }
+    fetchStocks()
+  }
+
+  // Функция сброса фильтров
+  function resetFilters() {
+    const today = new Date()
+    applyFilters({
+      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
+      dateTo: formatDate(new Date()),
+      region: ''
+    })
+  }
+
+  return {
     stocks,
     loading,
     error,
     page,
     totalPages,
+    filters,
     fetchStocks, // <- не забудьте добавить эту строку!
     nextPage,
-    prevPage
+    prevPage,
+    applyFilters,
+    resetFilters
   }
 })

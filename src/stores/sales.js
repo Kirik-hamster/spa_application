@@ -15,23 +15,27 @@ export const useSalesStore = defineStore('sales', () => {
     return date.toISOString().split('T')[0]
   }
 
+  // Изначальные фильтры (последние 7 дней)
+  const filters = ref({
+    dateFrom: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
+    dateTo: formatDate(new Date()),
+    region: ''
+  })
+
   async function fetchSales() {
     try {
       loading.value = true
       error.value = null
-      
-      // Рассчитываем даты (последние 7 дней)
-      const today = new Date()
-      const dateTo = formatDate(today)
-      const dateFrom = formatDate(new Date(today.setDate(today.getDate() - 7)))
+
+      const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
       const response = await axios.get('http://109.73.206.144:6969/api/sales', {
         params: {
-          key: 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie',
+          key: sicretKey,
           page: page.value,
           limit: limit.value,
-          dateFrom, // Обязательный параметр
-          dateTo    // Обязательный параметр
+          dateFrom: filters.value.dateFrom, 
+          dateTo: filters.value.dateTo   
         }
       })
       console.log("sales: ", response.data.data)
@@ -45,7 +49,8 @@ export const useSalesStore = defineStore('sales', () => {
       loading.value = false
     }
   }
-    // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
+  
+  // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
   function nextPage() {
     if (page.value < totalPages.value) {
       page.value++
@@ -60,14 +65,37 @@ export const useSalesStore = defineStore('sales', () => {
     }
   }
 
-    return {
+  // Функция применения фильтров
+  function applyFilters(newFilters = {}) {
+    page.value = 1 // Сбрасываем на первую страницу при изменении фильтров
+    filters.value = {
+      ...filters.value,
+      ...newFilters
+    }
+    fetchSales()
+  }
+
+  // Функция сброса фильтров
+  function resetFilters() {
+    const today = new Date()
+    applyFilters({
+      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
+      dateTo: formatDate(new Date()),
+      region: ''
+    })
+  }
+
+  return {
     sales,
     loading,
     error,
     page,
     totalPages,
+    filters,
     fetchSales, // <- не забудьте добавить эту строку!
     nextPage,
-    prevPage
+    prevPage,
+    applyFilters,
+    resetFilters
   }
 })

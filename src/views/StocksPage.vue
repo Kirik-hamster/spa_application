@@ -1,13 +1,34 @@
 <script setup>
 import { useStocksStore } from '@/stores/stocks'
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import stocksChart from '@/components/StocksChart.vue' // Добавляем импорт
 
 // 1. Получаем экземпляр хранилища
 const stocksStore = useStocksStore()
 
 // 2. Извлекаем реактивные переменные
-const { stocks, loading, error, page, totalPages } = storeToRefs(stocksStore)
+const { stocks, loading, error, page, totalPages,
+  filters
+ } = storeToRefs(stocksStore)
+
+// Получаем текущую дату в формате YYYY-MM-DD
+const maxDate = computed(() => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+})
+
+// Устанавливаем сегодняшнюю дату по умолчанию
+const localFilters = ref({
+  dateFrom: maxDate.value,
+  dateTo: maxDate.value,
+  region: filters.value.region
+})
+
+// Применяем фильтры
+const applyFilters = () => {
+  ordersStore.applyFilters(localFilters.value)
+}
 
 // 3. Загружаем данные при создании компонента
 onMounted(() => {
@@ -18,94 +39,149 @@ onMounted(() => {
 <template>
   <div class="orders-page">
     <h2>Акции</h2>
+
+    <!-- Фильтры в карточке -->
+    <div class="card filters-card">
+      <div class="card-header">
+        <h2>Фильтры</h2>
+      </div>
+      <div class="card-body">
+        <div class="filters-grid">
+        <div class="filter-group">
+          <label>Дата от</label>
+          <input 
+            type="date" 
+            v-model="localFilters.dateFrom" 
+            class="filter-input"
+            :max="maxDate"
+            readonly
+            title="Дата фиксирована - доступна только сегодняшняя выгрузка"
+          >
+          <div class="filter-hint">*Выгрузка только за текущий день</div>
+        </div>
+
+        <div class="filter-group">
+          <label>Дата до</label>
+          <input 
+            type="date" 
+            v-model="localFilters.dateTo" 
+            class="filter-input"
+            :max="maxDate"
+            readonly
+            title="Дата фиксирована - доступна только сегодняшняя выгрузка"
+          >
+          <div class="filter-hint">*Выгрузка только за текущий день</div>
+        </div>
+          
+          <div class="filter-group">
+            <label>Регион</label>
+            <input type="text" v-model="localFilters.region" placeholder="Введите область" class="filter-input">
+          </div>
+          
+          <div class="filter-actions">
+            <button @click="applyFilters" class="btn btn-primary apply-btn">
+              <span class="btn-icon">✓</span>
+              Применить
+            </button>
+            <button @click="stocksStore.resetFilters" class="btn btn-secondary reset-btn">
+              <span class="btn-icon">↺</span>
+              Сбросить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <!-- Состояние загрузки -->
-    <div v-if="loading" class="loading">Загрузка данных...</div>
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Загрузка данных...</p>
+    </div>
     
-    <!-- Ошибка -->
-    <div v-else-if="error" class="error">{{ error }}</div>
-    
+   <!-- Ошибка -->
+    <div v-else-if="error" class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Произошла ошибка</h3>
+      <p>{{ error }}</p>
+    </div>
+  
     <!-- Данные -->
     <div v-else>
-      <!-- Пагинация -->
-      <div class="pagination">
-        <button @click="stocksStore.prevPage" :disabled="page === 1">← Назад</button>
-        <span>Страница {{ page }} из {{ totalPages }}</span>
-        <button @click="stocksStore.nextPage" :disabled="page === totalPages">Вперед →</button>
+
+      <!-- График -->
+      <div class="card chart-card" v-if="!loading && !error">
+        <div class="card-header">
+          <h2>Визуализация колличества товара от клиента</h2>
+        </div>
+        <div class="card-body">
+          <stocksChart :stocks="stocks" />
+        </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>№</th>
-            <th>Название склада</th>
-            <th>Цена</th>
-            <th>Дата</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(stock, i) in stocks" :key="stock.id">
-            <td>{{ i+1 }}</td>
-            <td>{{ stock.warehouse_name }}</td>
-            <td>{{ stock.price }} р.</td>
-            <td>{{ stock.date }}</td>
-          </tr>
-        </tbody>
-      </table>
+
+      <!-- Пагинация сверху -->
+      <div class="pagination-top">
+        <div class="pagination-info">
+          <span>Страница {{ page }} из {{ totalPages }}</span>
+          <span class="orders-count">Всего записей: {{ stocksStore.totalOrders }}</span>
+        </div>
+        <div class="pagination-controls">
+          <button @click="stocksStore.prevPage" :disabled="page === 1" class="btn-pagination">
+            <span class="pagination-icon">←</span> Назад
+          </button>
+          <button @click="stocksStore.nextPage" :disabled="page === totalPages" class="btn-pagination">
+            Вперед <span class="pagination-icon">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Таблица -->
+      <div class="table-card card">
+        <div class="table-responsive">
+          <table class="spa-table">
+            <thead>
+              <tr>
+                <th>№</th>
+                <th>Название склада</th>
+                <th>Штрихкод товара</th>
+                <th>В пути от клиента</th>
+                <th class="text-right">Цена</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(stock, i) in stocks" :key="stock.id">
+                <td class="order-number">{{ i+1 }}</td>
+                <td>
+                  <span class="region-tag">{{ stock.warehouse_name }}</span>
+                </td>
+                <td>{{ stock.barcode }}</td>
+                <td>{{ stock.in_way_from_client }}</td>
+                <td class="text-right">
+                  <span class="price">{{ stock.price }} руб.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       
-      <!-- Пагинация -->
-      <div class="pagination">
-        <button @click="stocksStore.prevPage" :disabled="page === 1">← Назад</button>
-        <span>Страница {{ page }} из {{ totalPages }}</span>
-        <button @click="stocksStore.nextPage" :disabled="page === totalPages">Вперед →</button>
+      <!-- Пагинация снизу -->
+      <div class="pagination-bottom">
+        <div class="pagination-info">
+          <span>Страница {{ page }} из {{ totalPages }}</span>
+        </div>
+        <div class="pagination-controls">
+          <button @click="stocksStore.prevPage" :disabled="page === 1" class="btn-pagination">
+            <span class="pagination-icon">←</span> Назад
+          </button>
+          <button @click="stocksStore.nextPage" :disabled="page === totalPages" class="btn-pagination">
+            Вперед <span class="pagination-icon">→</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-th {
-  background-color: #f2f2f2;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-button {
-  padding: 8px 16px;
-  background: #42b983;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.loading, .error {
-  padding: 20px;
-  text-align: center;
-  font-size: 1.2em;
-}
-.error {
-  color: #ff5252;
-}
+@import '@/styles/pages_spa.css';
 </style>

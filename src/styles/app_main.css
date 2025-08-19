@@ -8,6 +8,10 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f7f9;
   color: #333;
+  /* Добавляем отступ сверху для фиксированного заголовка */
+  padding-top: 80px;
+  /* Добавляем отступ слева для фиксированной боковой панели */
+  padding-left: 250px;
 }
 
 .app-container {
@@ -22,6 +26,14 @@ body {
   color: white;
   padding: 20px 0;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  /* Фиксируем позицию */
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  /* Добавляем прокрутку если контент не помещается */
+  overflow-y: auto;
 }
 
 .logo {
@@ -77,18 +89,31 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  /* Убираем левый отступ так как панель фиксированная */
+  margin-left: 0;
+  width: calc(100% - 250px);
 }
 
 .main-header {
   background-color: white;
   padding: 15px 25px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  /* Фиксируем заголовок */
+  position: fixed;
+  top: 0;
+  left: 250px; /* Отступ равный ширине боковой панели */
+  right: 0;
+  z-index: 900;
+  height: 80px;
+  display: flex;
+  align-items: center;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 .header-content h1 {
@@ -119,17 +144,31 @@ body {
 .content-area {
   flex: 1;
   padding: 25px;
+  /* Добавляем отступ сверху для фиксированного заголовка */
+  margin-top: 80px;
   overflow-y: auto;
+  /* Минимальная высота чтобы контент всегда занимал всю доступную высоту */
+  min-height: calc(100vh - 80px);
 }
 
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
+  body {
+    padding-left: 0;
+    padding-top: 140px; /* Больше отступ сверху для мобильных */
+  }
+  
   .app-container {
     flex-direction: column;
   }
   
   .sidebar {
     width: 100%;
+    height: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
     padding: 10px 0;
   }
   
@@ -144,6 +183,19 @@ body {
     white-space: nowrap;
   }
   
+  .main-content {
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .main-header {
+    position: fixed;
+    top: 60px; /* Под боковой панелью */
+    left: 0;
+    right: 0;
+    height: 80px;
+  }
+  
   .header-content {
     flex-direction: column;
     align-items: flex-start;
@@ -152,5 +204,10 @@ body {
   .current-page {
     align-items: flex-start;
     margin-top: 10px;
+  }
+  
+  .content-area {
+    margin-top: 140px; /* Отступ для двух фиксированных панелей */
+    padding: 15px;
   }
 }

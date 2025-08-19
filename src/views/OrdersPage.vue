@@ -115,13 +115,14 @@ onMounted(() => {
       <!-- Таблица -->
       <div class="table-card card">
         <div class="table-responsive">
-          <table class="orders-table">
+          <table class="spa-table">
             <thead>
               <tr>
                 <th>№</th>
                 <th>Скидка</th>
                 <th>Дата</th>
-                <th>Область</th>
+                <th>Регион</th>
+                <th>Штрихкод товара</th>
                 <th class="text-right">Сумма</th>
               </tr>
             </thead>
@@ -137,6 +138,7 @@ onMounted(() => {
                 <td>
                   <span class="region-tag">{{ order.oblast }}</span>
                 </td>
+                <td>{{ order.barcode }}</td>
                 <td class="text-right">
                   <span class="price">{{ parseFloat(order.total_price).toFixed(2) }} руб.</span>
                 </td>

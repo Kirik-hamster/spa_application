@@ -7,20 +7,19 @@ import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, Li
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
-  orders: {
+  sales: {
     type: Array,
     required: true
   }
 })
 
-
 const chartData = {
-  labels: props.orders.map(order => order.barcode),
+  labels: props.sales.map(sale => sale.barcode),
   datasets: [
     {
-      label: 'Сумма заказов товара',
+      label: 'Сумма продаж товара',
       backgroundColor: '#f87979',
-      data: props.orders.map(order => parseFloat(order.total_price))
+      data: props.sales.map(sale => sale.total_price)
     }
   ]
 }
