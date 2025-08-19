@@ -10,10 +10,21 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
-  base: '/spa_application.github.io/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  base: './', // Относительные пути вместо абсолютных
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+        inlineDynamicImports: false
+      }
+    }
+  }
 })
