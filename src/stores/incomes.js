@@ -38,7 +38,7 @@ export const useIncomesStore = defineStore('incomes', () => {
       const dateTo = formatDate(today)
       const dateFrom = formatDate(new Date(today.setDate(today.getDate() - 7)))
       
-      const response = await axios.get('http://109.73.206.144:6969/api/incomes', {
+      const response = await axios.get('https://thingproxy.freeboard.io/fetch/http://109.73.206.144:6969/api/incomes', {
         params: {
           key: sicretKey,
           page: page.value,
