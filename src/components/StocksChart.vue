@@ -17,7 +17,7 @@ const chartData = {
   labels: props.stocks.map(stock => stock.barcode),
   datasets: [
     {
-      label: '',
+      label: 'Товары в пути от клиента',
       backgroundColor: '#f87979',
       data: props.stocks.map(stock => parseInt(stock.in_way_from_client))
     }
