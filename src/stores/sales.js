@@ -33,7 +33,7 @@ export const useSalesStore = defineStore('sales', () => {
 
       const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
-      const response = await axios.get('http://109.73.206.144:6969/api/sales', {
+      const response = await axios.get('https://109.73.206.144:6969/api/sales', {
         params: {
           key: sicretKey,
           page: page.value,
