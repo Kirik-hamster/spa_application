@@ -27,6 +27,12 @@ onMounted(() => {
     
     <!-- Данные -->
     <div v-else>
+      <!-- Пагинация -->
+      <div class="pagination">
+        <button @click="stocksStore.prevPage" :disabled="page === 1">← Назад</button>
+        <span>Страница {{ page }} из {{ totalPages }}</span>
+        <button @click="stocksStore.nextPage" :disabled="page === totalPages">Вперед →</button>
+      </div>
       <table>
         <thead>
           <tr>
@@ -77,6 +83,7 @@ th {
   align-items: center;
   gap: 20px;
   margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 button {

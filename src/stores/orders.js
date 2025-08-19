@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
@@ -15,28 +15,32 @@ export const useOrdersStore = defineStore('orders', () => {
     return date.toISOString().split('T')[0]
   }
 
+  // Изначальные фильтры (последние 7 дней)
+  const filters = ref({
+    dateFrom: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
+    dateTo: formatDate(new Date()),
+    region: ''
+  })
+
   async function fetchOrders() {
     try {
       loading.value = true
       error.value = null
+
+      const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
-      // Рассчитываем даты (последние 7 дней)
-      const today = new Date()
-      const dateTo = formatDate(today)
-      const dateFrom = formatDate(new Date(today.setDate(today.getDate() - 7)))
-      console.log("order: ", dateFrom, dateTo, today)
       const response = await axios.get('http://109.73.206.144:6969/api/orders', {
         params: {
-          key: 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie',
+          key: sicretKey,
           page: page.value,
           limit: limit.value,
-          dateFrom, // Обязательный параметр
-          dateTo    // Обязательный параметр
+          dateFrom: filters.value.dateFrom, 
+          dateTo: filters.value.dateTo   
         }
       })
       console.log("orders: ", response.data.data)
       orders.value = response.data.data
-      totalPages.value = 500 / limit.value
+      totalPages.value = Math.ceil(response.data.meta.total / limit.value)
       
     } catch (err) {
       error.value = `Ошибка ${err.response?.status || 400}: ${err.response?.data?.message || 'Неверный запрос'}`
@@ -60,14 +64,37 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-    return {
+  // Функция применения фильтров
+  function applyFilters(newFilters = {}) {
+    page.value = 1 // Сбрасываем на первую страницу при изменении фильтров
+    filters.value = {
+      ...filters.value,
+      ...newFilters
+    }
+    fetchOrders()
+  }
+
+  // Функция сброса фильтров
+  function resetFilters() {
+    const today = new Date()
+    applyFilters({
+      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
+      dateTo: formatDate(new Date()),
+      region: ''
+    })
+  }
+
+  return {
     orders,
     loading,
     error,
     page,
     totalPages,
+    filters,
     fetchOrders, // <- не забудьте добавить эту строку!
     nextPage,
-    prevPage
+    prevPage,
+    applyFilters,
+    resetFilters
   }
 })

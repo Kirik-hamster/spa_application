@@ -36,7 +36,7 @@ export const useSalesStore = defineStore('sales', () => {
       })
       console.log("sales: ", response.data.data)
       sales.value = response.data.data
-      totalPages.value = 500 / limit.value
+      totalPages.value = Math.ceil(response.data.meta.total / limit.value)
       
     } catch (err) {
       error.value = `Ошибка ${err.response?.status || 400}: ${err.response?.data?.message || 'Неверный запрос'}`

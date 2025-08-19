@@ -37,7 +37,7 @@ export const useStocksStore = defineStore('stocks', () => {
       })
       console.log("stocks: ", response.data.data)
       stocks.value = response.data.data
-      totalPages.value = 500 / limit.value
+      totalPages.value = Math.ceil(response.data.meta.total / limit.value)
       
     } catch (err) {
       error.value = `Ошибка ${err.response?.status || 400}: ${err.response?.data?.message || 'Неверный запрос'}`

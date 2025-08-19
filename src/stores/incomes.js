@@ -15,10 +15,20 @@ export const useIncomesStore = defineStore('incomes', () => {
     return date.toISOString().split('T')[0]
   }
 
+  // Изначальные фильтры (последние 7 дней)
+  const filters = ref({
+    dateFrom: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
+    dateTo: formatDate(new Date()),
+    region: ''
+  })
+
+
   async function fetchIncomes() {
     try {
       loading.value = true
       error.value = null
+
+      const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
       // Рассчитываем даты (последние 7 дней)
       const today = new Date()
@@ -27,17 +37,17 @@ export const useIncomesStore = defineStore('incomes', () => {
       
       const response = await axios.get('http://109.73.206.144:6969/api/incomes', {
         params: {
-          key: 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie',
+          key: sicretKey,
           page: page.value,
           limit: limit.value,
-          dateFrom, // Обязательный параметр
-          dateTo    // Обязательный параметр
+          dateFrom: filters.value.dateFrom, 
+          dateTo: filters.value.dateTo   
         }
       })
       console.log("incomes: ", response.data.data)
       
       incomes.value = response.data.data
-      totalPages.value = 500 / limit.value
+      totalPages.value = Math.ceil(response.data.meta.total / limit.value)
       
     } catch (err) {
       error.value = `Ошибка ${err.response?.status || 400}: ${err.response?.data?.message || 'Неверный запрос'}`
@@ -61,14 +71,38 @@ export const useIncomesStore = defineStore('incomes', () => {
     }
   }
 
-    return {
+    // Функция применения фильтров
+  function applyFilters(newFilters = {}) {
+    page.value = 1 // Сбрасываем на первую страницу при изменении фильтров
+    filters.value = {
+      ...filters.value,
+      ...newFilters
+    }
+    fetchIncomes()
+  }
+
+  // Функция сброса фильтров
+  function resetFilters() {
+    const today = new Date()
+    applyFilters({
+      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
+      dateTo: formatDate(new Date()),
+      region: ''
+    })
+  }
+
+
+  return {
     incomes,
     loading,
     error,
     page,
     totalPages,
+    filters,
     fetchIncomes, // <- не забудьте добавить эту строку!
     nextPage,
-    prevPage
+    prevPage,
+    applyFilters,
+    resetFilters
   }
 })
