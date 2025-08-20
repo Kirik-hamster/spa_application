@@ -1,9 +1,10 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
 export const useOrdersStore = defineStore('orders', () => {
-  const orders = ref([])
+  const allOrders = ref([])
+  const filteredOrders = ref([])
   const loading = ref(false)
   const error = ref(null)
   const page = ref(1)
@@ -25,11 +26,46 @@ export const useOrdersStore = defineStore('orders', () => {
     dateFrom: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
     dateTo: formatDate(new Date()),
     limit: limit.value,
-    region: ''
+    region: '',
+    barcode: ''
   })
 
   // Опции для лимита
   const limitOptions = ref([25, 50, 100, 250, 500])
+
+  // Computed свойство для отображаемых заказов с пагинацией
+  const orders = computed(() => {
+      // Создаем копию отфильтрованных данных для сортировки
+  let sortedData = [...filteredOrders.value]
+  
+  // Применяем сортировку если она активна
+  if (sortField.value) {
+      sortedData.sort((a, b) => {
+        // Приводим значения к числам, если это числовые поля
+        let valueA = a[sortField.value]
+        let valueB = b[sortField.value]
+        
+        if (sortField.value === 'discount_percent' || sortField.value === 'total_price') {
+          valueA = parseFloat(valueA) || 0
+          valueB = parseFloat(valueB) || 0
+        }
+        
+        if (sortOrder.value === 'asc') {
+          return valueA > valueB ? 1 : -1
+        } else {
+          return valueA < valueB ? 1 : -1
+        }
+      })
+    }
+    const start = (page.value - 1) * filters.value.limit
+    const end = start + filters.value.limit
+    return sortedData.slice(start, end)
+  })
+
+  // Computed свойство для общего количества отфильтрованных заказов
+  const totalFilteredOrders = computed(() => {
+    return filteredOrders.value.length
+  })
 
   async function fetchOrders() {
     try {
@@ -49,9 +85,9 @@ export const useOrdersStore = defineStore('orders', () => {
         }
       })
       console.log("orders: ", response.data.data)
-      orders.value = response.data.data
+      allOrders.value = response.data.data
       totalPages.value = Math.ceil(response.data.meta.total / limit.value)
-      
+      applyFilters()
     } catch (err) {
       error.value = `Ошибка ${err.response?.status || 400}: ${err.response?.data?.message || 'Неверный запрос'}`
       console.error('Детали ошибки:', err.config)
@@ -64,25 +100,7 @@ export const useOrdersStore = defineStore('orders', () => {
   function applySort(field, order) {
     sortField.value = field
     sortOrder.value = order
-    sortMenuOpen.value = null // Закрываем меню после выбора
-    
-    // Сортируем данные текущей страницы
-    orders.value.sort((a, b) => {
-      // Приводим значения к числам, если это числовые поля
-      let valueA = a[field]
-      let valueB = b[field]
-      
-      if (field === 'discount_percent' || field === 'total_price') {
-        valueA = parseFloat(valueA) || 0
-        valueB = parseFloat(valueB) || 0
-      }
-      
-      if (order === 'asc') {
-        return valueA > valueB ? 1 : -1
-      } else {
-        return valueA < valueB ? 1 : -1
-      }
-    })
+    sortMenuOpen.value = null
   }
 
   // Функция для открытия/закрытия меню сортировки
@@ -99,45 +117,80 @@ export const useOrdersStore = defineStore('orders', () => {
     sortField.value = null
     sortOrder.value = null
     sortMenuOpen.value = null
-    // Здесь нужно перезагрузить данные в исходном порядке
-    fetchOrders()
+    // Переприменяем фильтры чтобы обновить отображение (без перезагрузки)
+    applyFilters()
   }
 
   // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
   function nextPage() {
     if (page.value < totalPages.value) {
       page.value++
-      fetchOrders()
     }
   }
 
   function prevPage() {
     if (page.value > 1) {
       page.value--
-      fetchOrders()
     }
   }
 
   // Функция применения фильтров
   function applyFilters(newFilters = {}) {
-    page.value = 1 // Сбрасываем на первую страницу при изменении фильтров
-    filters.value = {
-      ...filters.value,
-      ...newFilters
+    if (newFilters) {
+      filters.value = {
+        ...filters.value,
+        ...newFilters
+      }
     }
-    limit.value = filters.value.limit
-    fetchOrders()
+
+    // Фильтрация данных
+    filteredOrders.value = allOrders.value.filter(order => {
+      // Фильтр по региону (частичное совпадение, без учета регистра)
+      if (filters.value.region && 
+          !order.oblast?.toLowerCase().includes(filters.value.region.toLowerCase())) {
+        return false
+      }
+
+      // Фильтр по штрихкоду (точное совпадение)
+      if (filters.value.barcode && order.barcode != filters.value.barcode) {
+        return false
+      }
+
+      // Фильтр по дате (если API не фильтрует)
+      const orderDate = new Date(order.date)
+      const fromDate = new Date(filters.value.dateFrom)
+      const toDate = new Date(filters.value.dateTo)
+      
+      if (orderDate < fromDate || orderDate > toDate) {
+        return false
+      }
+
+      return true
+    })
+
+    // Пересчет пагинации
+    page.value = 1
+    totalPages.value = Math.ceil(filteredOrders.value.length / filters.value.limit)
+  }
+
+  // Функция для получения сброшенных фильтров (добавьте эту функцию)
+  function getResetFilters() {
+    const today = new Date()
+    return {
+      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
+      dateTo: formatDate(new Date()),
+      limit: 500,
+      region: '',
+      barcode: ''
+    }
   }
 
   // Функция сброса фильтров
   function resetFilters() {
-    const today = new Date()
-    applyFilters({
-      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
-      dateTo: formatDate(new Date()),
-      lmit: 500,
-      region: ''
-    })
+    const resetFilters = getResetFilters()
+    applyFilters(resetFilters)
+    // Также сбрасываем сортировку при полном сбросе
+    clearSort()
   }
 
   return {
@@ -151,6 +204,7 @@ export const useOrdersStore = defineStore('orders', () => {
     sortField,
     sortOrder,
     sortMenuOpen,
+    totalFilteredOrders,
     fetchOrders, 
     nextPage,
     prevPage,
@@ -158,6 +212,7 @@ export const useOrdersStore = defineStore('orders', () => {
     resetFilters,
     applySort,
     toggleSortMenu,
-    clearSort
+    clearSort,
+    getResetFilters
   }
 })
