@@ -9,7 +9,7 @@ const salesStore = useSalesStore()
 
 //  Извлекаем реактивные переменные
 const { sales, loading, error, page, totalPages, 
-  filters, limitOptions
+  filters, limitOptions, sortField, sortSales, sortMenuOpen
 } = storeToRefs(salesStore)
 
 // Локальные фильтры для формы
@@ -129,16 +129,58 @@ onMounted(() => {
             <thead>
               <tr>
                 <th>№</th>
-                <th>Скидка</th>
+                <th class="sortable-header" @click.stop="salesStore.toggleSortMenu('discount_percent')">
+                  <div class="header-content">
+                    <span>Скидка</span>
+                    <span class="sort-indicator">
+                      <span v-if="sortField === 'discount_percent'">
+                        {{ sortSales === 'asc' ? '↑' : '↓' }}
+                      </span>
+                      <span v-else>↕</span>
+                    </span>
+                  </div>
+                  <div v-if="sortMenuOpen === 'discount_percent'" class="sort-menu">
+                    <div class="sort-option" @click="salesStore.applySort('discount_percent', 'asc')">
+                      возр. ↑
+                    </div>
+                    <div class="sort-option" @click="salesStore.applySort('discount_percent', 'desc')">
+                      убыв. ↓
+                    </div>
+                    <div v-if="sortField === 'discount_percent'" class="sort-option" @click="salesStore.clearSort()">
+                      Сброс
+                    </div>
+                  </div>
+                </th>
                 <th>Регион</th>
                 <th>Дата</th>
                 <th>Штрикод товара</th>
-                <th class="text-right">Полная Стоимость</th>
+                <th class="sortable-header text-right" @click.stop="salesStore.toggleSortMenu('total_price')">
+                  <div class="header-content">
+                    <span>Полная стоимость</span>
+                    <span class="sort-indicator">
+                      <span v-if="sortField === 'total_price'">
+                        {{ sortSales === 'asc' ? '↑' : '↓' }}
+                      </span>
+                      <span v-else>↕</span>
+                    </span>
+                  </div>
+                  <div v-if="sortMenuOpen === 'total_price'" class="sort-menu">
+                    <div class="sort-option" @click="salesStore.applySort('total_price', 'asc')">
+                      возр. ↑
+                    </div>
+                    <div class="sort-option" @click="salesStore.applySort('total_price', 'desc')">
+                      убыв. ↓
+                    </div>
+                    <div v-if="sortField === 'total_price'" class="sort-option" @click="salesStore.clearSort()">
+                      сброс
+                    </div>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(sale, i) in sales" :key="sale.id">
-                <td class="order-number">{{ i+1 }}</td>
+                <td class="order-number">{{ (page - 1) * filters.limit + i + 1 }}</td>
                 <td>
                   <span class="discount-badge" :class="{'high-discount': sale.discount_percent > 15}">
                     {{ sale.discount_percent }} %
@@ -178,4 +220,5 @@ onMounted(() => {
 
 <style scoped>
 @import '@/styles/pages_spa.css';
+@import '@/styles/sort_filter_table.css';
 </style>

@@ -9,7 +9,7 @@ const stocksStore = useStocksStore()
 
 // Извлекаем реактивные переменные
 const { stocks, loading, error, page, totalPages,
-  filters, limitOptions
+  filters, limitOptions, sortField, sortStocks, sortMenuOpen
  } = storeToRefs(stocksStore)
 
 // Получаем текущую дату в формате YYYY-MM-DD
@@ -154,13 +154,55 @@ onMounted(() => {
                 <th>№</th>
                 <th>Название склада</th>
                 <th>Штрихкод товара</th>
-                <th>В пути от клиента</th>
-                <th class="text-right">Цена</th>
+                <th class="sortable-header" @click.stop="stocksStore.toggleSortMenu('in_way_from_client')">
+                  <div class="header-content">
+                    <span>В пути от клиента</span>
+                    <span class="sort-indicator">
+                      <span v-if="sortField === 'in_way_from_client'">
+                        {{ sortStocks === 'asc' ? '↑' : '↓' }}
+                      </span>
+                      <span v-else>↕</span>
+                    </span>
+                  </div>
+                  <div v-if="sortMenuOpen === 'in_way_from_client'" class="sort-menu">
+                    <div class="sort-option" @click="stocksStore.applySort('in_way_from_client', 'asc')">
+                      возр. ↑
+                    </div>
+                    <div class="sort-option" @click="stocksStore.applySort('in_way_from_client', 'desc')">
+                      убыв. ↓
+                    </div>
+                    <div v-if="sortField === 'in_way_from_client'" class="sort-option" @click="stocksStore.clearSort()">
+                      Сброс
+                    </div>
+                  </div>
+                </th>
+                <th class="sortable-header text-right" @click.stop="stocksStore.toggleSortMenu('price')">
+                  <div class="header-content">
+                    <span>Цена</span>
+                    <span class="sort-indicator">
+                      <span v-if="sortField === 'price'">
+                        {{ sortStocks === 'asc' ? '↑' : '↓' }}
+                      </span>
+                      <span v-else>↕</span>
+                    </span>
+                  </div>
+                  <div v-if="sortMenuOpen === 'price'" class="sort-menu">
+                    <div class="sort-option" @click="stocksStore.applySort('price', 'asc')">
+                      возр. ↑
+                    </div>
+                    <div class="sort-option" @click="stocksStore.applySort('price', 'desc')">
+                      убыв. ↓
+                    </div>
+                    <div v-if="sortField === 'price'" class="sort-option" @click="stocksStore.clearSort()">
+                      сброс
+                    </div>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(stock, i) in stocks" :key="stock.id">
-                <td class="order-number">{{ i+1 }}</td>
+                <td class="order-number">{{ (page - 1) * filters.limit + i + 1 }}</td>
                 <td>
                   <span class="region-tag">{{ stock.warehouse_name }}</span>
                 </td>
@@ -195,4 +237,5 @@ onMounted(() => {
 
 <style scoped>
 @import '@/styles/pages_spa.css';
+@import '@/styles/sort_filter_table.css';
 </style>

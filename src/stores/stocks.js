@@ -9,6 +9,11 @@ export const useStocksStore = defineStore('stocks', () => {
   const page = ref(1)
   const limit = ref(500)
   const totalPages = ref(1)
+
+  // Добавляем состояние для сортировки
+  const sortField = ref(null)
+  const sortStocks = ref('asc') // 'asc' или 'desc'
+  const sortMenuOpen = ref(null) // Для отслеживания открытого меню
   
   // Функция для форматирования даты в YYYY-MM-DD
   const formatDate = (date) => {
@@ -53,6 +58,49 @@ export const useStocksStore = defineStore('stocks', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  // Функция для сортировки текущей страницы
+  function applySort(field, order) {
+    sortField.value = field
+    sortStocks.value = order
+    sortMenuOpen.value = null // Закрываем меню после выбора
+    
+    // Сортируем данные текущей страницы
+    stocks.value.sort((a, b) => {
+      // Приводим значения к числам, если это числовые поля
+      let valueA = a[field]
+      let valueB = b[field]
+      
+      if (field === 'in_way_from_client' || field === 'price') {
+        valueA = parseFloat(valueA) || 0
+        valueB = parseFloat(valueB) || 0
+      }
+      
+      if (order === 'asc') {
+        return valueA > valueB ? 1 : -1
+      } else {
+        return valueA < valueB ? 1 : -1
+      }
+    })
+  }
+
+  // Функция для открытия/закрытия меню сортировки
+  function toggleSortMenu(field) {
+    if (sortMenuOpen.value === field) {
+      sortMenuOpen.value = null
+    } else {
+      sortMenuOpen.value = field
+    }
+  }
+
+  // Функция для сброса сортировки
+  function clearSort() {
+    sortField.value = null
+    sortStocks.value = null
+    sortMenuOpen.value = null
+    // Здесь нужно перезагрузить данные в исходном порядке
+    fetchStocks()
   }
 
   // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
@@ -100,10 +148,16 @@ export const useStocksStore = defineStore('stocks', () => {
     totalPages,
     filters,
     limitOptions,
+    sortField,
+    sortStocks,
+    sortMenuOpen,
     fetchStocks,
     nextPage,
     prevPage,
     applyFilters,
-    resetFilters
+    resetFilters,
+    applySort,
+    toggleSortMenu,
+    clearSort
   }
 })

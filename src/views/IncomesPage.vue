@@ -9,7 +9,7 @@ const incomesStore = useIncomesStore()
 
 // Извлекаем реактивные переменные
 const { incomes, loading, error, page, totalPages,
-  filters, limitOptions
+  filters, limitOptions, sortField, sortIncomes, sortMenuOpen
  } = storeToRefs(incomesStore)
 
 // Локальные фильтры для формы
@@ -130,14 +130,35 @@ onMounted(() => {
               <thead>
                   <tr>
                       <th>№</th>
-                      <th>Колличество продано</th>
+                      <th class="sortable-header" @click.stop="incomesStore.toggleSortMenu('quantity')">
+                        <div class="header-content">
+                          <span>Колличество продано</span>
+                          <span class="sort-indicator">
+                            <span v-if="sortField === 'quantity'">
+                              {{ sortIncomes === 'asc' ? '↑' : '↓' }}
+                            </span>
+                            <span v-else>↕</span>
+                          </span>
+                        </div>
+                        <div v-if="sortMenuOpen === 'quantity'" class="sort-menu">
+                          <div class="sort-option" @click="incomesStore.applySort('quantity', 'asc')">
+                            возр. ↑
+                          </div>
+                          <div class="sort-option" @click="incomesStore.applySort('quantity', 'desc')">
+                            убыв. ↓
+                          </div>
+                          <div v-if="sortField === 'quantity'" class="sort-option" @click="incomesStore.clearSort()">
+                            Сброс
+                          </div>
+                        </div>                        
+                      </th>
                       <th>Название склада</th>
                       <th>Штрикод товара</th>
                   </tr>
               </thead>
               <tbody>
                   <tr v-for="(income, i) in incomes" :key="income.id">
-                      <td class="order-number">{{ i+1 }}</td>
+                      <td class="order-number">{{ (page - 1) * filters.limit + i + 1 }}</td>
                       <td>{{ income.quantity }}</td>
                       <td>{{ income.warehouse_name }}</td>
                       <td>{{ income.barcode }}</td>
@@ -166,5 +187,6 @@ onMounted(() => {
 </template>
 <style scoped>
 @import '@/styles/pages_spa.css';
+@import '@/styles/sort_filter_table.css';
 </style>
 

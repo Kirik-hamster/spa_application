@@ -1,6 +1,6 @@
 # spa_application
 
-This template should help get you started developing with Vue 3 in Vite.
+Доступно для демострации на https://kirik-hamster-github-io.vercel.app
 
 ## Recommended IDE Setup
 
@@ -19,7 +19,7 @@ npm install
 ### Compile and Hot-Reload for Development
 
 ```sh
-npm run dev
+npx vercal dev
 ```
 
 ### Compile and Minify for Production
