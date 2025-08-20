@@ -1,7 +1,7 @@
 <script setup>
 import { useStocksStore } from '@/stores/stocks'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import stocksChart from '@/components/StocksChart.vue' // Добавляем импорт
 
 // Получаем экземпляр хранилища
@@ -9,26 +9,32 @@ const stocksStore = useStocksStore()
 
 // Извлекаем реактивные переменные
 const { stocks, loading, error, page, totalPages,
-  filters, limitOptions, sortField, sortStocks, sortMenuOpen
+  filters, limitOptions, sortField, sortStocks, sortMenuOpen,
+  totalFilteredStocks
  } = storeToRefs(stocksStore)
-
-// Получаем текущую дату в формате YYYY-MM-DD
-const maxDate = computed(() => {
-  const today = new Date()
-  return today.toISOString().split('T')[0]
-})
 
 // Устанавливаем сегодняшнюю дату по умолчанию
 const localFilters = ref({
-  dateFrom: maxDate.value,
-  dateTo: maxDate.value,
-  region: filters.value.region,
+  dateFrom: filters.value.dateFrom,
+  dateTo: filters.value.dateTo,
+  warehouse_name: filters.value.warehouse_name,
+  barcode: filters.value.barcode,
   limit: filters.value.limit
 })
+
+// Следим за изменениями filters из хранилища и обновляем localFilters
+watch(filters, (newFilters) => {
+  localFilters.value = { ...newFilters }
+}, { deep: true })
 
 // Применяем фильтры
 const applyFilters = () => {
   stocksStore.applyFilters(localFilters.value)
+}
+
+// Сбрасываем фильтры
+const resetFilters = () => {
+  stocksStore.resetFilters()
 }
 
 // Загружаем данные при создании компонента
@@ -39,7 +45,7 @@ onMounted(() => {
 
 <template>
   <div class="orders-page">
-    <h2>Акции</h2>
+    <h2>Склады</h2>
 
     <!-- Фильтры в карточке -->
     <div class="card filters-card">
@@ -50,33 +56,24 @@ onMounted(() => {
         <div class="filters-grid">
         <div class="filter-group">
           <label>Дата от</label>
-          <input 
-            type="date" 
-            v-model="localFilters.dateFrom" 
-            class="filter-input"
-            :max="maxDate"
-            readonly
-            title="Дата фиксирована - доступна только сегодняшняя выгрузка"
-          >
+          <input type="date" v-model="localFilters.dateFrom" class="filter-input" readonly>
           <div class="filter-hint">*Выгрузка только за текущий день</div>
         </div>
 
         <div class="filter-group">
           <label>Дата до</label>
-          <input 
-            type="date" 
-            v-model="localFilters.dateTo" 
-            class="filter-input"
-            :max="maxDate"
-            readonly
-            title="Дата фиксирована - доступна только сегодняшняя выгрузка"
-          >
+          <input type="date" v-model="localFilters.dateTo"  class="filter-input" readonly>
           <div class="filter-hint">*Выгрузка только за текущий день</div>
         </div>
           
           <div class="filter-group">
             <label>Регион</label>
-            <input type="text" v-model="localFilters.region" placeholder="Введите область" class="filter-input">
+            <input type="text" v-model="localFilters.warehouse_name" placeholder="Введите область" class="filter-input">
+          </div>
+
+          <div class="filter-group">
+            <label>Штрихкод</label>
+            <input type="text" v-model="localFilters.barcode" placeholder="Введите штрихкод" class="filter-input">
           </div>
 
           <div class="filter-group">
@@ -94,7 +91,7 @@ onMounted(() => {
               <span class="btn-icon">✓</span>
               Применить
             </button>
-            <button @click="stocksStore.resetFilters" class="btn btn-secondary reset-btn">
+            <button @click="resetFilters" class="btn btn-secondary reset-btn">
               <span class="btn-icon">↺</span>
               Сбросить
             </button>
@@ -102,6 +99,12 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Информация о фильтрации -->
+    <div v-if="!loading && !error" class="filter-info card">
+      <span>Найдено записей: {{ totalFilteredStocks }}</span>
+    </div>
+
     
     <!-- Состояние загрузки -->
     <div v-if="loading" class="loading-state">
@@ -133,7 +136,7 @@ onMounted(() => {
       <div class="pagination-top">
         <div class="pagination-info">
           <span>Страница {{ page }} из {{ totalPages }}</span>
-          <span class="orders-count">Всего записей: {{ stocksStore.totalOrders }}</span>
+          <span class="orders-count">Всего записей: {{ totalFilteredStocks }}</span>
         </div>
         <div class="pagination-controls">
           <button @click="stocksStore.prevPage" :disabled="page === 1" class="btn-pagination">

@@ -31,15 +31,15 @@ export const useOrdersStore = defineStore('orders', () => {
   })
 
   // Опции для лимита
-  const limitOptions = ref([25, 50, 100, 250, 500])
+  const limitOptions = ref([10, 25, 50, 100, 250, 500])
 
   // Computed свойство для отображаемых заказов с пагинацией
   const orders = computed(() => {
-      // Создаем копию отфильтрованных данных для сортировки
-  let sortedData = [...filteredOrders.value]
+    // Создаем копию отфильтрованных данных для сортировки
+    let sortedData = [...filteredOrders.value]
   
-  // Применяем сортировку если она активна
-  if (sortField.value) {
+    // Применяем сортировку если она активна
+    if (sortField.value) {
       sortedData.sort((a, b) => {
         // Приводим значения к числам, если это числовые поля
         let valueA = a[sortField.value]

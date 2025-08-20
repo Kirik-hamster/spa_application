@@ -1,9 +1,10 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
 export const useIncomesStore = defineStore('incomes', () => {
-  const incomes = ref([])
+  const allIncomes = ref([])
+  const filteredIncomes = ref([])
   const loading = ref(false)
   const error = ref(null)
   const page = ref(1)
@@ -25,11 +26,46 @@ export const useIncomesStore = defineStore('incomes', () => {
     dateFrom: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
     dateTo: formatDate(new Date()),
     limit: limit.value,
-    region: ''
+    warehouse_name: '',
+    barcode: ''
   })
 
   // Опции для лимита
-  const limitOptions = ref([25, 50, 100, 250, 500])
+  const limitOptions = ref([10, 25, 50, 100, 250, 500])
+
+  // Computed свойство для отображаемых заказов с пагинацией
+  const incomes = computed(() => {
+    // Создаем копию отфильтрованных данных для сортировки
+    let sortedData = [...filteredIncomes.value]
+  
+    // Применяем сортировку если она активна
+    if (sortField.value) {
+      sortedData.sort((a, b) => {
+        // Приводим значения к числам, если это числовые поля
+        let valueA = a[sortField.value]
+        let valueB = b[sortField.value]
+        
+        if (sortField.value === 'quantity') {
+          valueA = parseFloat(valueA) || 0
+          valueB = parseFloat(valueB) || 0
+        }
+        
+        if (sortIncomes.value === 'asc') {
+          return valueA > valueB ? 1 : -1
+        } else {
+          return valueA < valueB ? 1 : -1
+        }
+      })
+    }
+    const start = (page.value - 1) * filters.value.limit
+    const end = start + filters.value.limit
+    return sortedData.slice(start, end)
+  })
+
+  // Computed свойство для общего количества отфильтрованных заказов
+  const totalFilteredIncomes = computed(() => {
+    return filteredIncomes.value.length
+  })
 
   async function fetchIncomes() {
     try {
@@ -49,9 +85,9 @@ export const useIncomesStore = defineStore('incomes', () => {
         }
       })
       console.log("incomes: ", response.data.data)
-      incomes.value = response.data.data
+      allIncomes.value = response.data.data
       totalPages.value = Math.ceil(response.data.meta.total / limit.value)
-      
+      applyFilters()
     } catch (err) {
       error.value = `Ошибка ${err.response?.status || 400}: ${err.response?.data?.message || 'Неверный запрос'}`
       console.error('Детали ошибки:', err.config)
@@ -60,29 +96,11 @@ export const useIncomesStore = defineStore('incomes', () => {
     }
   }
 
-    // Функция для сортировки текущей страницы
+  // Функция для сортировки текущей страницы
   function applySort(field, income) {
     sortField.value = field
     sortIncomes.value = income
     sortMenuOpen.value = null // Закрываем меню после выбора
-    
-    // Сортируем данные текущей страницы
-    incomes.value.sort((a, b) => {
-      // Приводим значения к числам, если это числовые поля
-      let valueA = a[field]
-      let valueB = b[field]
-      
-      if (field === 'quantity') {
-        valueA = parseFloat(valueA) || 0
-        valueB = parseFloat(valueB) || 0
-      }
-      
-      if (income === 'asc') {
-        return valueA > valueB ? 1 : -1
-      } else {
-        return valueA < valueB ? 1 : -1
-      }
-    })
   }
 
   // Функция для открытия/закрытия меню сортировки
@@ -99,47 +117,81 @@ export const useIncomesStore = defineStore('incomes', () => {
     sortField.value = null
     sortIncomes.value = null
     sortMenuOpen.value = null
-    // Здесь нужно перезагрузить данные в исходном порядке
-    fetchIncomes()
+    // Переприменяем фильтры чтобы обновить отображение (без перезагрузки)
+    applyFilters()
   }
     
   // ДОБАВЛЕННЫЕ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ
   function nextPage() {
     if (page.value < totalPages.value) {
       page.value++
-      fetchIncomes()
     }
   }
 
   function prevPage() {
     if (page.value > 1) {
       page.value--
-      fetchIncomes()
     }
   }
 
-    // Функция применения фильтров
+  // Функция применения фильтров
   function applyFilters(newFilters = {}) {
-    page.value = 1 // Сбрасываем на первую страницу при изменении фильтров
-    filters.value = {
-      ...filters.value,
-      ...newFilters
+    if (newFilters) {
+      filters.value = {
+        ...filters.value,
+        ...newFilters
+      }
     }
-    limit.value = filters.value.limit
-    fetchIncomes()
+
+    // Фильтрация данных
+    filteredIncomes.value = allIncomes.value.filter(income => {
+      // Фильтр по warehouse_name 
+      if (filters.value.warehouse_name && 
+          !income.warehouse_name?.toLowerCase().includes(filters.value.warehouse_name.toLowerCase())) {
+        return false
+      }
+
+      // Фильтр по штрихкоду (точное совпадение)
+      if (filters.value.barcode && income.barcode != filters.value.barcode) {
+        return false
+      }
+
+      // Фильтр по дате 
+      const orderDate = new Date(income.date)
+      const fromDate = new Date(filters.value.dateFrom)
+      const toDate = new Date(filters.value.dateTo)
+      
+      if (orderDate < fromDate || orderDate > toDate) {
+        return false
+      }
+
+      return true
+    })
+
+    // Пересчет пагинации
+    page.value = 1
+    totalPages.value = Math.ceil(filteredIncomes.value.length / filters.value.limit)
+  }
+
+  // Функция для получения сброшенных фильтров (добавьте эту функцию)
+  function getResetFilters() {
+    const today = new Date()
+    return {
+      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
+      dateTo: formatDate(new Date()),
+      limit: 500,
+      warehouse_name: '',
+      barcode: ''
+    }
   }
 
   // Функция сброса фильтров
   function resetFilters() {
-    const today = new Date()
-    applyFilters({
-      dateFrom: formatDate(new Date(today.setDate(today.getDate() - 7))),
-      dateTo: formatDate(new Date()),
-      lmit: 500,
-      region: ''
-    })
+    const resetFilters = getResetFilters()
+    applyFilters(resetFilters)
+    // Также сбрасываем сортировку при полном сбросе
+    clearSort()
   }
-
 
   return {
     incomes,
@@ -152,6 +204,7 @@ export const useIncomesStore = defineStore('incomes', () => {
     sortField,
     sortIncomes,
     sortMenuOpen,
+    totalFilteredIncomes,
     fetchIncomes, 
     nextPage,
     prevPage,
@@ -159,6 +212,7 @@ export const useIncomesStore = defineStore('incomes', () => {
     resetFilters,
     applySort,
     toggleSortMenu,
-    clearSort
+    clearSort,
+    getResetFilters
   }
 })

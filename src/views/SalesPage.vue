@@ -1,7 +1,7 @@
 <script setup>
 import { useSalesStore } from '@/stores/sales'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import SalesChart from '@/components/SalesChart.vue' // Добавляем импорт
 
 // Получаем экземпляр хранилища
@@ -9,20 +9,32 @@ const salesStore = useSalesStore()
 
 //  Извлекаем реактивные переменные
 const { sales, loading, error, page, totalPages, 
-  filters, limitOptions, sortField, sortSales, sortMenuOpen
+  filters, limitOptions, sortField, sortSales, sortMenuOpen,
+  totalFilteredSales
 } = storeToRefs(salesStore)
 
 // Локальные фильтры для формы
 const localFilters = ref({
   dateFrom: filters.value.dateFrom,
   dateTo: filters.value.dateTo,
-  region: filters.value.region,
+  region_name: filters.value.region_name,
+  barcode: filters.value.barcode,
   limit: filters.value.limit
 })  
+
+// Следим за изменениями filters из хранилища и обновляем localFilters
+watch(filters, (newFilters) => {
+  localFilters.value = { ...newFilters }
+}, { deep: true })
 
 // Применяем фильтры
 const applyFilters = () => {
   salesStore.applyFilters(localFilters.value)
+}
+
+// Сбрасываем фильтры
+const resetFilters = () => {
+  salesStore.resetFilters()
 }
 
 // Загружаем данные при создании компонента
@@ -54,7 +66,12 @@ onMounted(() => {
           
           <div class="filter-group">
             <label>Регион</label>
-            <input type="text" v-model="localFilters.region" placeholder="Введите область" class="filter-input">
+            <input type="text" v-model="localFilters.region_name" placeholder="Введите область" class="filter-input">
+          </div>
+
+          <div class="filter-group">
+            <label>Штрихкод</label>
+            <input type="text" v-model="localFilters.barcode" placeholder="Введите штрихкод" class="filter-input">
           </div>
           
           <div class="filter-group">
@@ -71,13 +88,18 @@ onMounted(() => {
               <span class="btn-icon">✓</span>
               Применить
             </button>
-            <button @click="salesStore.resetFilters" class="btn btn-secondary reset-btn">
+            <button @click="resetFilters" class="btn btn-secondary reset-btn">
               <span class="btn-icon">↺</span>
               Сбросить
             </button>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Информация о фильтрации -->
+    <div v-if="!loading && !error" class="filter-info card">
+      <span>Найдено записей: {{ totalFilteredSales }}</span>
     </div>
     
     <!-- Состояние загрузки -->
@@ -110,7 +132,7 @@ onMounted(() => {
       <div class="pagination-top">
         <div class="pagination-info">
           <span>Страница {{ page }} из {{ totalPages }}</span>
-          <span class="orders-count">Всего записей: {{ salesStore.totalOrders }}</span>
+          <span class="orders-count">Всего записей: {{ totalFilteredSales }}</span>
         </div>
         <div class="pagination-controls">
           <button @click="salesStore.prevPage" :disabled="page === 1" class="btn-pagination">

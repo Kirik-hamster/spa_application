@@ -248,21 +248,4 @@ onMounted(() => {
 <style scoped>
 @import '@/styles/pages_spa.css';
 @import '@/styles/sort_filter_table.css';
-
-
-.filter-info {
-  margin: 1rem 0;
-  padding: 0.5rem;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  text-align: center;
-  font-weight: 500;
-}
-
-.no-data {
-  text-align: center;
-  padding: 2rem;
-  color: #6c757d;
-}
-
 </style>

@@ -1,7 +1,7 @@
 <script setup>
 import { useIncomesStore } from '@/stores/incomes'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import IncomesChart from '@/components/IncomesChart.vue' // Добавляем импорт
 
 // Получаем экземпляр хранилища
@@ -9,20 +9,32 @@ const incomesStore = useIncomesStore()
 
 // Извлекаем реактивные переменные
 const { incomes, loading, error, page, totalPages,
-  filters, limitOptions, sortField, sortIncomes, sortMenuOpen
+  filters, limitOptions, sortField, sortIncomes, sortMenuOpen,
+  totalFilteredIncomes
  } = storeToRefs(incomesStore)
 
 // Локальные фильтры для формы
 const localFilters = ref({
   dateFrom: filters.value.dateFrom,
   dateTo: filters.value.dateTo,
-  region: filters.value.region,
+  warehouse_name: filters.value.warehouse_name,
+  barcode: filters.value.barcode,
   limit: filters.value.limit
 })
+
+// Следим за изменениями filters из хранилища и обновляем localFilters
+watch(filters, (newFilters) => {
+  localFilters.value = { ...newFilters }
+}, { deep: true })
 
 // Применяем фильтры
 const applyFilters = () => {
   incomesStore.applyFilters(localFilters.value)
+}
+
+// Сбрасываем фильтры
+const resetFilters = () => {
+  incomesStore.resetFilters()
 }
 
 // Загружаем данные при создании компонента
@@ -53,8 +65,13 @@ onMounted(() => {
           </div>
           
           <div class="filter-group">
-            <label>Регион</label>
-            <input type="text" v-model="localFilters.region" placeholder="Введите область" class="filter-input">
+            <label>Название склада</label>
+            <input type="text" v-model="localFilters.warehouse_name" placeholder="Введите название склада" class="filter-input">
+          </div>
+
+          <div class="filter-group">
+            <label>Штрихкод</label>
+            <input type="text" v-model="localFilters.barcode" placeholder="Введите штрихкод" class="filter-input">
           </div>
 
           <div class="filter-group">
@@ -71,13 +88,18 @@ onMounted(() => {
               <span class="btn-icon">✓</span>
               Применить
             </button>
-            <button @click="incomesStore.resetFilters" class="btn btn-secondary reset-btn">
+            <button @click="resetFilters" class="btn btn-secondary reset-btn">
               <span class="btn-icon">↺</span>
               Сбросить
             </button>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Информация о фильтрации -->
+    <div v-if="!loading && !error" class="filter-info card">
+      <span>Найдено записей: {{ totalFilteredIncomes }}</span>
     </div>
 
     <!-- Состояние загрузки -->
@@ -106,12 +128,11 @@ onMounted(() => {
         </div>
       </div>
 
-
       <!-- Пагинация сверху -->
       <div class="pagination-top">
         <div class="pagination-info">
           <span>Страница {{ page }} из {{ totalPages }}</span>
-          <span class="orders-count">Всего записей: {{ incomesStore.totalOrders }}</span>
+          <span class="orders-count">Всего записей: {{ totalFilteredIncomes }}</span>
         </div>
         <div class="pagination-controls">
           <button @click="incomesStore.prevPage" :disabled="page === 1" class="btn-pagination">
@@ -130,6 +151,8 @@ onMounted(() => {
               <thead>
                   <tr>
                       <th>№</th>
+                      <th>Название склада</th>
+                      <th>Дата</th>
                       <th class="sortable-header" @click.stop="incomesStore.toggleSortMenu('quantity')">
                         <div class="header-content">
                           <span>Колличество продано</span>
@@ -152,15 +175,17 @@ onMounted(() => {
                           </div>
                         </div>                        
                       </th>
-                      <th>Название склада</th>
                       <th>Штрикод товара</th>
                   </tr>
               </thead>
               <tbody>
                   <tr v-for="(income, i) in incomes" :key="income.id">
                       <td class="order-number">{{ (page - 1) * filters.limit + i + 1 }}</td>
+                      <td>
+                        <span class="region-tag">{{ income.warehouse_name }}</span>
+                      </td>
+                      <td>{{ income.date }}</td>
                       <td>{{ income.quantity }}</td>
-                      <td>{{ income.warehouse_name }}</td>
                       <td>{{ income.barcode }}</td>
                   </tr>
               </tbody>
