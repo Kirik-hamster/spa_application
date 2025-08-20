@@ -38,7 +38,7 @@ export const useOrdersStore = defineStore('orders', () => {
 
       const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
-      const response = await axios.get('https://thingproxy.freeboard.io/fetch/http://109.73.206.144:6969/api/orders', {
+      const response = await axios.get('/api/orders', {
         params: {
           key: sicretKey,
           page: page.value,
