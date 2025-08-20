@@ -38,8 +38,9 @@ export const useOrdersStore = defineStore('orders', () => {
 
       const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
-      const response = await axios.get('/api/orders', {
+      const response = await axios.get('/api/api', {
         params: {
+          path: 'orders',
           key: sicretKey,
           page: page.value,
           limit: filters.value.limit,

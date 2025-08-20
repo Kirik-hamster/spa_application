@@ -33,8 +33,9 @@ export const useStocksStore = defineStore('stocks', () => {
 
       const sicretKey = 'E6kUTYrYwZq2tN4QEtyzsbEBk3ie'
       
-      const response = await axios.get('https://thingproxy.freeboard.io/fetch/http://109.73.206.144:6969/api/stocks', {
+      const response = await axios.get('api/api', {
         params: {
+          path: 'stocks',
           key: sicretKey,
           page: page.value,
           limit: filters.value.limit,

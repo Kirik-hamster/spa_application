@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
-  const { key, page, limit, dateFrom, dateTo } = req.query
+  const { path, key, page, limit, dateFrom, dateTo } = req.query
 
-  const targetUrl = `http://109.73.206.144:6969/api/orders?key=${key}&page=${page}&limit=${limit}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+  const targetUrl = `http://109.73.206.144:6969/api/${path}?key=${key}&page=${page}&limit=${limit}&dateFrom=${dateFrom}&dateTo=${dateTo}`
 
   try {
     const response = await fetch(targetUrl)
