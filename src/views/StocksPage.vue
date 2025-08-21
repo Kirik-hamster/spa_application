@@ -67,8 +67,8 @@ onMounted(() => {
         </div>
           
           <div class="filter-group">
-            <label>Регион</label>
-            <input type="text" v-model="localFilters.warehouse_name" placeholder="Введите область" class="filter-input">
+            <label>Название склада</label>
+            <input type="text" v-model="localFilters.warehouse_name" placeholder="Введите название склада" class="filter-input">
           </div>
 
           <div class="filter-group">
